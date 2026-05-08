@@ -213,8 +213,8 @@ Responsibilities:
 
 Initial reporting interval:
 
-- Start with every 60 seconds
-- Use every 5-15 minutes if long-term storage volume becomes a concern
+- Start with every 5 minutes
+- Keep local screen refresh more frequent, for example every 5 seconds
 
 Device request format:
 
@@ -258,7 +258,7 @@ Approximate storage volume:
 
 Recommended starting point:
 
-- Store raw readings every 60 seconds.
+- Store raw readings every 5 minutes.
 - Query raw readings directly for short ranges like 24h or 7d.
 - Aggregate in Convex queries for medium ranges.
 - Add precomputed rollups only if charts become slow.
@@ -328,12 +328,19 @@ Exact commands may change depending on whether we choose Vite or Next.js.
 ## Open Questions
 
 - Should the first dashboard be Vite or Next.js?
+  - Vite
 - Will there be one sensor device or multiple?
+  - one for now, possibly more in the future
 - Should the dashboard be public, password-protected, or local/private only?
+  - public is fine I think
 - What reporting interval is acceptable?
+  - 5 minutes for cloud reporting, with more frequent local screen refresh
 - Do we want Fahrenheit display in addition to Celsius?
+  - I'd like to be able to toggle between the 2 on the frontend dashboard
 - Should CO2 thresholds be configurable?
+  - no, hardcoded is fine
 - Should data be retained forever, or should old raw readings eventually be downsampled?
+  - let's retain forever for now
 
 ## Suggested First Implementation
 
