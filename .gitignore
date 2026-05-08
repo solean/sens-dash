@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Bun / Node
+node_modules/
+.bun/
+dist/
+build/
+.vite/
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+settings.toml
+device/settings.toml
+
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/
+
+# Logs
+*.log

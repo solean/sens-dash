@@ -1,0 +1,12 @@
+# Copy these values into CIRCUITPY/settings.toml on the Feather.
+# Do not commit your real Wi-Fi password or device secret.
+
+CIRCUITPY_WIFI_SSID = "your-wifi-name"
+CIRCUITPY_WIFI_PASSWORD = "your-wifi-password"
+
+CONVEX_INGEST_URL = "https://your-convex-deployment.convex.site/readings"
+SENSOR_DEVICE_ID = "office-feather-01"
+SENSOR_DEVICE_SECRET = "replace-with-a-long-random-secret"
+
+SENSOR_READ_INTERVAL_SECONDS = 5
+SENSOR_POST_INTERVAL_SECONDS = 60
