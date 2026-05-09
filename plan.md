@@ -286,7 +286,8 @@ Version 1:
 
 - Require a bearer token for the ingestion endpoint.
 - Store the expected token in Convex environment variables.
-- Keep the dashboard private by not publishing the URL broadly.
+- The dashboard may be public for v1.
+- Do not expose the device secret to the frontend.
 
 Version 2:
 
@@ -346,11 +347,11 @@ Exact commands may change depending on whether we choose Vite or Next.js.
 
 Start with the smallest complete loop:
 
-1. Build Vite + React dashboard.
-2. Add Convex schema and ingestion HTTP action.
-3. Add a local test script that posts fake readings.
-4. Show latest values in the dashboard.
-5. Add a 24-hour chart.
+1. Build Vite + React dashboard. Done.
+2. Add Convex schema and ingestion HTTP action. Done.
+3. Add a local test script that posts fake readings. Done.
+4. Show latest values in the dashboard. Done.
+5. Add a 24-hour chart. Done.
 6. Deploy to Vercel and Convex.
 7. Point the ESP32 at the production Convex endpoint.
 
