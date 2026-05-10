@@ -31,6 +31,7 @@ DEVICE_ID = os.getenv("SENSOR_DEVICE_ID") or "office-feather-01"
 DEVICE_SECRET = os.getenv("SENSOR_DEVICE_SECRET")
 READ_INTERVAL_SECONDS = int(os.getenv("SENSOR_READ_INTERVAL_SECONDS") or 5)
 POST_INTERVAL_SECONDS = int(os.getenv("SENSOR_POST_INTERVAL_SECONDS") or 300)
+PHOENIX_UTC_OFFSET_SECONDS = -7 * 60 * 60
 
 
 # Sensor setup
@@ -134,6 +135,23 @@ def set_status(text, color=COLOR_MUTED):
     print(text)
 
 
+def format_phoenix_time(recorded_at_ms):
+    local_seconds = int(recorded_at_ms / 1000) + PHOENIX_UTC_OFFSET_SECONDS
+    local_time = time.localtime(local_seconds)
+    hour = local_time.tm_hour
+    minute = local_time.tm_min
+    suffix = "AM"
+
+    if hour >= 12:
+        suffix = "PM"
+
+    hour = hour % 12
+    if hour == 0:
+        hour = 12
+
+    return "{}:{:02d} {}".format(hour, minute, suffix)
+
+
 def connect_wifi():
     if wifi.radio.connected:
         return True
@@ -195,7 +213,21 @@ def post_reading(co2, temp_c, humidity):
         )
 
         if 200 <= response.status_code < 300:
-            set_status("Uploaded reading", COLOR_GOOD)
+            uploaded_at = None
+            try:
+                uploaded_at = response.json().get("recordedAt")
+            except Exception as error:
+                print("Upload timestamp parse error:", repr(error))
+
+            if uploaded_at is not None:
+                set_status(
+                    "Uploaded reading - {}".format(
+                        format_phoenix_time(uploaded_at)
+                    ),
+                    COLOR_GOOD,
+                )
+            else:
+                set_status("Uploaded reading", COLOR_GOOD)
             return True
 
         set_status("Upload HTTP {}".format(response.status_code), COLOR_WARN)
