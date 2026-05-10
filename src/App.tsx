@@ -35,6 +35,14 @@ const rangeOptions = [
 
 type RangeId = (typeof rangeOptions)[number]["id"];
 type TemperatureUnit = "F" | "C";
+type ChartPoint = {
+  label: string;
+  count: number;
+  tempAvg: number | null;
+  humidityAvgPct: number | null;
+  co2AvgPpm: number | null;
+};
+type MetricKey = "co2AvgPpm" | "tempAvg" | "humidityAvgPct";
 
 type AppProps = {
   convexConfigured: boolean;
@@ -189,7 +197,7 @@ function Dashboard() {
             onChange={setRangeId}
           />
         </div>
-        <SensorChart
+        <MetricChartGroup
           data={normalizedChartData}
           unit={unit}
           emptyLabel="No readings in this range yet."
@@ -207,7 +215,7 @@ function Dashboard() {
             <span>5 min reporting</span>
           </div>
         </div>
-        <SensorChart
+        <MetricChartGroup
           data={normalizedHourlyData}
           unit={unit}
           emptyLabel="Hourly averages will appear after readings are received."
@@ -247,20 +255,12 @@ function ReadingCard({
   );
 }
 
-function SensorChart({
+function MetricChartGroup({
   data,
   unit,
   emptyLabel,
 }: {
-  data:
-    | Array<{
-        label: string;
-        count: number;
-        tempAvg: number | null;
-        humidityAvgPct: number | null;
-        co2AvgPpm: number | null;
-      }>
-    | undefined;
+  data: ChartPoint[] | undefined;
   unit: TemperatureUnit;
   emptyLabel: string;
 }) {
@@ -272,8 +272,34 @@ function SensorChart({
     return <div className="chart-state">{emptyLabel}</div>;
   }
 
+  const metrics = getMetricConfigs(unit);
+
   return (
-    <div className="chart-wrap">
+    <div className="metric-chart-list">
+      {metrics.map((metric) => (
+        <MetricChart key={metric.key} data={data} metric={metric} />
+      ))}
+    </div>
+  );
+}
+
+function MetricChart({
+  data,
+  metric,
+}: {
+  data: ChartPoint[];
+  metric: ReturnType<typeof getMetricConfigs>[number];
+}) {
+  return (
+    <section className="metric-chart" aria-labelledby={`${metric.key}-title`}>
+      <div className="metric-chart-header">
+        <div>
+          <h3 id={`${metric.key}-title`}>{metric.label}</h3>
+          <p>{metric.description}</p>
+        </div>
+        <span className="metric-unit">{metric.unit}</span>
+      </div>
+      <div className="chart-wrap">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
           <CartesianGrid stroke="rgba(211, 221, 214, 0.12)" vertical={false} />
@@ -285,23 +311,14 @@ function SensorChart({
             tick={{ fill: "#aab7af", fontSize: 12 }}
           />
           <YAxis
-            yAxisId="co2"
-            orientation="left"
             tickLine={false}
             axisLine={false}
             tick={{ fill: "#aab7af", fontSize: 12 }}
             width={48}
-          />
-          <YAxis
-            yAxisId="env"
-            orientation="right"
-            tickLine={false}
-            axisLine={false}
-            tick={{ fill: "#aab7af", fontSize: 12 }}
-            width={42}
+            tickFormatter={(value) => metric.tickFormatter(Number(value))}
           />
           <Tooltip
-            cursor={{ stroke: "rgba(238, 188, 90, 0.35)" }}
+            cursor={{ stroke: metric.cursorColor }}
             contentStyle={{
               background: "#121d19",
               border: "1px solid rgba(211, 221, 214, 0.16)",
@@ -309,36 +326,14 @@ function SensorChart({
               color: "#edf5ef",
               boxShadow: "0 18px 50px rgba(0, 0, 0, 0.35)",
             }}
-            formatter={(value, name) => formatTooltip(value, name, unit)}
+            formatter={(value) => metric.tooltipFormatter(value)}
+            labelStyle={{ color: "#edf5ef" }}
           />
           <Line
-            yAxisId="co2"
             type="monotone"
-            dataKey="co2AvgPpm"
-            name="CO2"
-            stroke="#eebc5a"
-            strokeWidth={2.5}
-            dot={false}
-            activeDot={{ r: 4 }}
-            connectNulls
-          />
-          <Line
-            yAxisId="env"
-            type="monotone"
-            dataKey="tempAvg"
-            name="Temp"
-            stroke="#6bb3ff"
-            strokeWidth={2.5}
-            dot={false}
-            activeDot={{ r: 4 }}
-            connectNulls
-          />
-          <Line
-            yAxisId="env"
-            type="monotone"
-            dataKey="humidityAvgPct"
-            name="Humidity"
-            stroke="#75d99a"
+            dataKey={metric.key}
+            name={metric.label}
+            stroke={metric.color}
             strokeWidth={2.5}
             dot={false}
             activeDot={{ r: 4 }}
@@ -346,7 +341,8 @@ function SensorChart({
           />
         </LineChart>
       </ResponsiveContainer>
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -505,24 +501,63 @@ function roundTo(value: number, precision: number) {
   return Math.round(value * factor) / factor;
 }
 
-function formatTooltip(value: unknown, name: unknown, unit: TemperatureUnit) {
-  if (typeof value !== "number") {
-    return ["—", String(name)];
-  }
-
-  if (name === "CO2") {
-    return [`${numberFormat.format(Math.round(value))} ppm`, name];
-  }
-
-  if (name === "Temp") {
-    return [`${numberFormat.format(roundTo(value, 1))} °${unit}`, name];
-  }
-
-  if (name === "Humidity") {
-    return [`${numberFormat.format(roundTo(value, 1))}%`, name];
-  }
-
-  return [numberFormat.format(roundTo(value, 1)), String(name)];
+function getMetricConfigs(unit: TemperatureUnit): Array<{
+  key: MetricKey;
+  label: string;
+  description: string;
+  unit: string;
+  color: string;
+  cursorColor: string;
+  tickFormatter: (value: number) => string;
+  tooltipFormatter: (value: unknown) => [string, string];
+}> {
+  return [
+    {
+      key: "co2AvgPpm",
+      label: "CO2",
+      description: "Average carbon dioxide concentration.",
+      unit: "ppm",
+      color: "#eebc5a",
+      cursorColor: "rgba(238, 188, 90, 0.35)",
+      tickFormatter: (value) => numberFormat.format(Math.round(value)),
+      tooltipFormatter: (value) => [
+        typeof value === "number"
+          ? `${numberFormat.format(Math.round(value))} ppm`
+          : "—",
+        "CO2",
+      ],
+    },
+    {
+      key: "tempAvg",
+      label: "Temperature",
+      description: "Average room temperature.",
+      unit: `°${unit}`,
+      color: "#6bb3ff",
+      cursorColor: "rgba(107, 179, 255, 0.35)",
+      tickFormatter: (value) => numberFormat.format(roundTo(value, 1)),
+      tooltipFormatter: (value) => [
+        typeof value === "number"
+          ? `${numberFormat.format(roundTo(value, 1))} °${unit}`
+          : "—",
+        "Temperature",
+      ],
+    },
+    {
+      key: "humidityAvgPct",
+      label: "Humidity",
+      description: "Average relative humidity.",
+      unit: "%",
+      color: "#75d99a",
+      cursorColor: "rgba(117, 217, 154, 0.35)",
+      tickFormatter: (value) => numberFormat.format(roundTo(value, 1)),
+      tooltipFormatter: (value) => [
+        typeof value === "number"
+          ? `${numberFormat.format(roundTo(value, 1))}%`
+          : "—",
+        "Humidity",
+      ],
+    },
+  ];
 }
 
 const numberFormat = new Intl.NumberFormat(undefined, {
