@@ -315,6 +315,7 @@ function MetricChart({
             axisLine={false}
             tick={{ fill: "#aab7af", fontSize: 12 }}
             width={48}
+            domain={metric.domain}
             tickFormatter={(value) => metric.tickFormatter(Number(value))}
           />
           <Tooltip
@@ -508,6 +509,7 @@ function getMetricConfigs(unit: TemperatureUnit): Array<{
   unit: string;
   color: string;
   cursorColor: string;
+  domain: [number | "auto", number | "auto"];
   tickFormatter: (value: number) => string;
   tooltipFormatter: (value: unknown) => [string, string];
 }> {
@@ -519,6 +521,7 @@ function getMetricConfigs(unit: TemperatureUnit): Array<{
       unit: "ppm",
       color: "#eebc5a",
       cursorColor: "rgba(238, 188, 90, 0.35)",
+      domain: [0, "auto"],
       tickFormatter: (value) => numberFormat.format(Math.round(value)),
       tooltipFormatter: (value) => [
         typeof value === "number"
@@ -534,6 +537,7 @@ function getMetricConfigs(unit: TemperatureUnit): Array<{
       unit: `°${unit}`,
       color: "#6bb3ff",
       cursorColor: "rgba(107, 179, 255, 0.35)",
+      domain: unit === "F" ? [65, 85] : [18, 30],
       tickFormatter: (value) => numberFormat.format(roundTo(value, 1)),
       tooltipFormatter: (value) => [
         typeof value === "number"
@@ -549,6 +553,7 @@ function getMetricConfigs(unit: TemperatureUnit): Array<{
       unit: "%",
       color: "#75d99a",
       cursorColor: "rgba(117, 217, 154, 0.35)",
+      domain: [0, 100],
       tickFormatter: (value) => numberFormat.format(roundTo(value, 1)),
       tooltipFormatter: (value) => [
         typeof value === "number"
