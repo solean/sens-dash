@@ -4,7 +4,9 @@ import {
   Activity,
   Clock3,
   Droplets,
+  Moon,
   Radio,
+  Sun,
   Thermometer,
   Wind,
 } from "lucide-react";
@@ -35,6 +37,7 @@ const rangeOptions = [
 
 type RangeId = (typeof rangeOptions)[number]["id"];
 type TemperatureUnit = "F" | "C";
+type Theme = "dark" | "light";
 type ChartPoint = {
   label: string;
   count: number;
@@ -58,6 +61,7 @@ export default function App({ convexConfigured }: AppProps) {
 
 function Dashboard() {
   const [now, setNow] = useState(() => Date.now());
+  const [theme, setTheme] = useTheme();
   const [unit, setUnit] = useSearchParamState<TemperatureUnit>("unit", "F", [
     "F",
     "C",
@@ -124,6 +128,19 @@ function Dashboard() {
             <Radio size={16} aria-hidden />
             <span>{DEVICE_ID}</span>
           </div>
+          <button
+            type="button"
+            className="theme-toggle"
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? (
+              <Sun size={17} aria-hidden />
+            ) : (
+              <Moon size={17} aria-hidden />
+            )}
+            <span>{theme === "dark" ? "Light" : "Dark"}</span>
+          </button>
           <SegmentedControl
             label="Temperature unit"
             value={unit}
@@ -302,18 +319,18 @@ function MetricChart({
       <div className="chart-wrap">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
-          <CartesianGrid stroke="rgba(211, 221, 214, 0.12)" vertical={false} />
+          <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
           <XAxis
             dataKey="label"
             tickLine={false}
             axisLine={false}
             minTickGap={24}
-            tick={{ fill: "#aab7af", fontSize: 12 }}
+            tick={{ fill: "var(--text-muted)", fontSize: 12 }}
           />
           <YAxis
             tickLine={false}
             axisLine={false}
-            tick={{ fill: "#aab7af", fontSize: 12 }}
+            tick={{ fill: "var(--text-muted)", fontSize: 12 }}
             width={48}
             domain={metric.domain}
             tickFormatter={(value) => metric.tickFormatter(Number(value))}
@@ -321,14 +338,14 @@ function MetricChart({
           <Tooltip
             cursor={{ stroke: metric.cursorColor }}
             contentStyle={{
-              background: "#121d19",
-              border: "1px solid rgba(211, 221, 214, 0.16)",
+              background: "var(--tooltip-bg)",
+              border: "1px solid var(--border)",
               borderRadius: 8,
-              color: "#edf5ef",
-              boxShadow: "0 18px 50px rgba(0, 0, 0, 0.35)",
+              color: "var(--text)",
+              boxShadow: "var(--shadow-strong)",
             }}
             formatter={(value) => metric.tooltipFormatter(value)}
-            labelStyle={{ color: "#edf5ef" }}
+            labelStyle={{ color: "var(--text)" }}
           />
           <Line
             type="monotone"
@@ -388,6 +405,30 @@ function SetupRequired() {
       </section>
     </main>
   );
+}
+
+function useTheme() {
+  const [theme, setTheme] = useState<Theme>(() => {
+    const savedTheme = window.localStorage.getItem("theme");
+    if (savedTheme === "dark" || savedTheme === "light") {
+      return savedTheme;
+    }
+
+    return window.matchMedia("(prefers-color-scheme: light)").matches
+      ? "light"
+      : "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    window.localStorage.setItem("theme", theme);
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", theme === "dark" ? "#0f1715" : "#f5f1e8");
+  }, [theme]);
+
+  return [theme, setTheme] as const;
 }
 
 function useSearchParamState<T extends string>(
